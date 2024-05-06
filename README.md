@@ -1,2 +1,69 @@
-# Tinkoff-AFAStt
-This is Feedback analyzer using AI for Tinkoff 
+AFAStt: Automated Feedback Analysis System for Tinkoff
+Временно вебсайт доступен по ссылке https://zabojeb.github.io/tinkoff-feedback-analysis/hello.html
+
+Дополнительное задание выполнено в файле .ipynb
+
+Note
+
+Некоторые функции, которые не были реализованы в прототипе буду описаны здесь. Поэтому прочитать README - важно!
+
+Ход работы
+Парсинг
+Мы реализовали парсинг с двух платформ:
+
+https://banki.ru
+https://sravni.ru
+Тем не менее, парсинг с других платформ не представляет из себя сложной задачи.
+
+В прототипе и датасете мы используем парсинг только с banki.ru. Поэтому код парсинга sravni.ru представим здесь:
+
+def parse_sravniru(num, page):
+    data = {\"good\": [], \"bad\": []}
+    r = 0
+    while True:
+        if r >= num:
+            with open(\"output.json\", \"w\") as f:
+                json.dump(data, f)
+            return data
+            
+        req = requests.get(f\"https://www.sravni.ru/proxy-reviews/reviews/?filterBy=withRates&fingerPrint=ea060f38d490a841e5bae143a1505423&isClient=true&locationRoute=&newIds=true&orderBy=byDate&pageIndex={page}&pageSize=10&reviewObjectId=5bb4f769245bc22a520a6353&reviewObjectType=banks&specificProductId=&withVotes=true\")
+        reviews = req.json()
+        
+        if reviews[\"items\"] == []:
+            return data
+
+        for item in reviews[\"items\"]:
+            review = item[\"text\"].replace(\"\\n\", \"\").replace(\"\\r\", \"\").replace(\"\\t\", \"\")
+            if review != \"\" and review != \" \" and review != \"\\n\" and review != ', ':
+                if int(item[\"rating\"]) in (1, 2, 3):
+                    data[\"bad\"].append(review)
+                elif int(item[\"rating\"]) in (4, 5):
+                    data[\"good\"].append(review)
+                    
+                r += 1
+                
+                print(f\"Получено отзывов с сравни.ру: {r}/{num}\")
+                
+            page += 1
+Почему вебсайт?
+В презентации мы говорили, что сделаем приложение или вебсайт на React. Сейчас вебсайт написан на чистом HTML5+CSS+JS
+
+Мы выбрали такой формат из-за удобства использования. Вебсайтом можно пользоваться на любом устройстве. Этому способствует адаптивный дизайн.
+
+Как оно работает?
+У нас есть python-скрипт, который парсит отзывы, анализирует их и формирует базу данных. Парсинг - довольно долгий процесс. Оценка длится еще больше.
+
+Поэтому для начала работы нужно сформировать первоначальный полный датасет, а затем обновлять его по запросу пользователя.
+
+При обновлении в датасет будут добавляться только новые отзывы.
+
+Сейчас наш датасет статический и не может обновляться (хотя мы можем это реализовать), потому что мы не обладаем достаточными финансовыми ресурсами.
+
+To-Do List
+Сортировка и фильтрация по времени. Это довольно легко реализовать, ведь с отзывами хранится время публикации в формате timestamp.
+Выявление средней оценки. Этот параметр также есть в датасете, это легко реализовать.
+Выявление "реальной" оценки. Это уже не совсем легко, но достаточно просто. На данный момент мы тестируем различные модели с Hugging Face для выявления эмоциональной окраски отзывов и их анализа.
+Отображение графиков с динамикой изменения среднй оценки. Это реализуемо, но для этого нужен большой датасет и, возможно, реализация предыдущего пункта.
+Warning
+
+Project is WIP now.
